@@ -15,6 +15,7 @@ lvim.lint_on_save = true
 lvim.colorscheme = "onedarker"
 lvim.builtin.dap.active = true
 
+
 -- keymappings [view all the defaults by pressing <leader>Lk]
 lvim.leader = "space"
 -- add your own keymapping
@@ -121,6 +122,7 @@ lvim.keys.normal_mode["<Space><"] = "<cmd>HopChar2<CR>"
 lvim.keys.normal_mode["<Space>*"] = "<cmd>Telescope live_grep<CR>"
 lvim.keys.normal_mode["<leader>."] = "<cmd>lua Buffer_dir()<CR>"
 lvim.keys.normal_mode["-"] = nil
+
 -- TODO: User Config for predefined plugins
 -- After changing plugin config exit and reopen LunarVim, Run :PackerInstall :PackerCompile
 lvim.builtin.dashboard.active = true
