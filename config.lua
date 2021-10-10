@@ -10,11 +10,10 @@ function _G.put(...)
 	return ...
 end
 -- general
--- lvim.format_on_save = true
-lvim.lint_on_save = true
+lvim.format_on_save = false
+lvim.lint_on_save = false
 lvim.colorscheme = "onedarker"
 lvim.builtin.dap.active = true
-
 
 -- keymappings [view all the defaults by pressing <leader>Lk]
 lvim.leader = "space"
@@ -62,11 +61,8 @@ lvim.builtin.which_key.mappings["t"] = {
 	w = { "<cmd>Telescope lsp_workspace_diagnostics<cr>", "Diagnosticss" },
 }
 
-lvim.builtin.which_key.mappings["b"] = {
-	name = "+Buffers",
-	b = { "<cmd>Telescope buffers<cr>", "Buffers" },
-	d = { "<cmd>BufferDelete<cr>", "Delete Buffer" },
-}
+lvim.builtin.which_key.mappings["b"].d={ "<cmd>BufferDelete<cr>", "Delete Buffer" }
+lvim.builtin.which_key.mappings["b"].b={ "<cmd>Telescope buffers<cr>", "Buffers" }
 
 lvim.builtin.which_key.mappings["w"] = {
 	name = "+Windows",
@@ -102,10 +98,13 @@ lvim.builtin.dap.on_config_done = function()
 	}
 end
 
-lvim.builtin.which_key.mappings["s"] = {
-	name = "+Search",
-	b = { "<cmd>Telescope current_buffer_fuzzy_find theme=get_ivy<cr>", "Switch" },
+lvim.builtin.which_key.mappings["r"] = {
+	name = "+Request",
+	r = { "<cmd>lua require('rest-nvim').run()<cr>", "Execute" },
 }
+
+lvim.builtin.which_key.mappings["s"].b = { "<cmd>Telescope current_buffer_fuzzy_find theme=get_ivy<cr>", "Switch" }
+
 
 lvim.keys.normal_mode["<Space>w"] = "<C-w>"
 lvim.keys.normal_mode["<Space>wl"] = "<C-l>"
@@ -134,6 +133,17 @@ lvim.builtin.nvimtree.show_icons.git = 0
 lvim.builtin.treesitter.ensure_installed = {}
 lvim.builtin.treesitter.ignore_install = { "haskell" }
 lvim.builtin.treesitter.highlight.enabled = true
+
+lvim.builtin.treesitter.on_config_done = function()
+	local parser_configs = require("nvim-treesitter.parsers").get_parser_configs()
+	parser_configs.http = {
+		install_info = {
+			url = "https://github.com/NTBBloodbath/tree-sitter-http",
+			files = { "src/parser.c" },
+			branch = "main",
+		},
+	}
+end
 
 -- generic LSP settings
 -- you can set a custom on_attach function that will be used for all the language servers
@@ -169,9 +179,9 @@ lvim.builtin.treesitter.highlight.enabled = true
 --   }
 -- }
 -- set an additional linter
--- lvim.lang.python.linters = {
+-- lvim.lang.javascript.linters = {
 --   {
---     exe = "flake8",
+--     exe = "eslint",
 --     args = {}
 --   }
 -- }
@@ -180,6 +190,25 @@ lvim.builtin.treesitter.highlight.enabled = true
 lvim.plugins = {
 	{ "rcarriga/nvim-dap-ui", requires = { "mfussenegger/nvim-dap" } },
 	{ "TimUntersberger/neogit", requires = "nvim-lua/plenary.nvim" },
+	{
+		"NTBBloodbath/rest.nvim",
+		requires = { "nvim-lua/plenary.nvim" },
+		config = function()
+			require("rest-nvim").setup({
+				-- Open request results in a horizontal split
+				result_split_horizontal = false,
+				-- Skip SSL verification, useful for unknown certificates
+				skip_ssl_verification = false,
+				-- Highlight request on run
+				highlight = {
+					enabled = true,
+					timeout = 150,
+				},
+				-- Jump to request line on run
+				jump_to_request = false,
+			})
+		end,
+	},
 	{
 		"phaazon/hop.nvim",
 		as = "hop",
