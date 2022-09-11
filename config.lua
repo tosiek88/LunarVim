@@ -1,15 +1,4 @@
 local inspect = require("vim.inspect")
--- THESE ARE EXAMPLE CONFIGS FEEL FREE TO CHANGE TO WHATEVER YOU WANT
-function _G.put(...)
-	local objects = {}
-	for i = 1, select("#", ...) do
-		local v = select(i, ...)
-		table.insert(objects, vim.inspect(v))
-	end
-
-	print(table.concat(objects, "\n"))
-	return ...
-end
 
 -- general
 lvim.format_on_save = false
