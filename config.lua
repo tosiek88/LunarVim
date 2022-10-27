@@ -9,7 +9,9 @@ lvim.builtin.dap.active = true
 -- keymappings [view all the defaults by pressing <leader>Lk]
 lvim.leader = "space"
 -- add your own keymapping
-lvim.keys.normal_mode["<C-s>"] = ":w<cr>"
+lvim.keys.normal_mode["<C-s>"] = ":w<CR>"
+lvim.keys.normal_mode["<S-h>"] = ":bp<CR>"
+lvim.keys.normal_mode["<S-l>"] = ":bn<CR>"
 -- unmap a default keymapping
 -- lvim.keys.normal_mode["<C-Up>"] = ""
 -- edit a default keymapping
@@ -34,6 +36,8 @@ lvim.builtin.telescope.on_config_done = function()
 	lvim.builtin.telescope.defaults.mappings.n["<C-j>"] = actions.move_selection_next
 	lvim.builtin.telescope.defaults.mappings.n["<C-k>"] = actions.move_selection_previous
 	lvim.builtin.telescope.defaults.mappings.n["q"] = actions._close
+
+	lvim.builtin.which_key.mappings["f"] = { "<cmd>Telescope find_files<cr>", "Find files" }
 
 	local opts = {
 		theme = "ivy",
@@ -62,7 +66,7 @@ end
 lvim.builtin.which_key.mappings["p"] = { p = { "<cmd>Telescope projects<CR>", "Projects" } }
 lvim.builtin.which_key.mappings["t"] = {
 	name = "+Trouble",
-	t = { "<cmd>Telescope diagnostics<cr>", "Diagnostics" },
+	t = { "<cmd>Trouble workspace_diagnostics<cr>", "Diagnostics" },
 }
 lvim.builtin.which_key.mappings["x"] = {
 	name = "+Database",
@@ -109,6 +113,10 @@ lvim.builtin.dap.on_config_done = function()
 	}
 end
 
+-- Indicator icon
+lvim.builtin.bufferline.options.indicator_icon = nil
+lvim.builtin.bufferline.options.indicator = { style = "icon", icon = "▎" }
+
 lvim.builtin.which_key.mappings["r"] = {
 	name = "+Request",
 	r = { "<cmd>lua require('rest-nvim').run()<cr>", "Execute" },
@@ -130,12 +138,11 @@ lvim.keys.normal_mode["<Space>gg"] = "<cmd>Neogit<CR>"
 lvim.keys.visual_mode["gp"] = "<cmd>'<,'>diffput<CR>"
 lvim.builtin.which_key.mappings["g"] = {
 	g = { "<cmd>Neogit<CR>", "Neogit" },
+	b = { "<cmd>Gitsigns blame_line<CR>", "Blame Line" },
 	d = { "<cmd>DiffviewOpen<CR>", "Diff" },
 	q = { "<cmd>DiffviewClose<CR>", "Close Diff" },
 	p = { "<cmd>'<,'>diffput<CR>", "Diff put" },
 }
-
-print(vim.inspect(require("diffview.actions").goto_file))
 
 lvim.keys.normal_mode["gss"] = "<cmd>HopChar2<CR>"
 lvim.keys.normal_mode["<Space><"] = "<cmd>HopChar2<CR>"
@@ -192,6 +199,11 @@ end
 -- end
 -- set a formatter if you want to override the default lsp one (if it exists)
 
+lvim.builtin.which_key.mappings["m"] = {
+	name = "+Markdown",
+	t = { "<Plug>MarkdownPreviewToggle<cr>", "Preview toggle" },
+}
+
 local linters = require("lvim.lsp.null-ls.linters")
 linters.setup({
 	{
@@ -203,12 +215,36 @@ linters.setup({
 local formatters = require("lvim.lsp.null-ls.formatters")
 formatters.setup({
 	{ exe = "stylua", filetypes = { "lua" } },
-	{ exe = "prettier", filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" } },
+	{ exe = "eslint_d", filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" } },
 })
 -- Additional Plugins
 lvim.plugins = {
 	{ "nvim-orgmode/orgmode" },
+	{ "iamcco/markdown-preview.nvim" },
+	{
+		"glepnir/lspsaga.nvim",
+		branch = "main",
+		config = function()
+			local saga = require("lspsaga")
+
+			saga.init_lsp_saga({
+				-- your configuration
+			})
+		end,
+	},
 	{ "norcalli/nvim-colorizer.lua" },
+	{
+		"TimUntersberger/neogit",
+		requires = { "nvim-lua/plenary.nvim", "sindrets/diffview.nvim" },
+		config = function()
+			local neogit = require("neogit")
+			neogit.setup({
+				integrations = {
+					diffview = true,
+				},
+			})
+		end,
+	},
 	{
 		"nanotee/sqls.nvim",
 		config = function()
@@ -236,7 +272,6 @@ lvim.plugins = {
 				external_config = {
 					enable = true,
 					path = (function()
-						print(vim.inspect(require("lspconfig.util").find_git_ancestor(vim.loop.fs_realpath("."))))
 						return require("lspconfig.util").find_git_ancestor(vim.loop.fs_realpath(".")) .. "/dap-go.json"
 					end)(),
 				},
@@ -277,14 +312,13 @@ lvim.plugins = {
 		end,
 	},
 	{
-		"TimUntersberger/neogit",
-		requires = { "nvim-lua/plenary.nvim", "sindrets/diffview.nvim" },
+		"folke/todo-comments.nvim",
+		requires = "nvim-lua/plenary.nvim",
 		config = function()
-			local neogit = require("neogit")
-			neogit.setup({
-				integrations = {
-					diffview = true,
-				},
+			require("todo-comments").setup({
+				-- your configuration comes here
+				-- or leave it empty to use the default settings
+				-- refer to the configuration section below
 			})
 		end,
 	},
@@ -338,70 +372,7 @@ local dap = require("dap")
 dap.adapters.go = {
 	type = "executable",
 	command = "node",
-	args = { os.getenv("HOME") .. "/vscode-go/dist/debugAdapter.js" }, -- specify the path to the adapter
+	args = { os.getenv("HOME") .. "/.vscode/extensions/golang.go-0.33.1/dist/debugAdapter.js" }, -- specify the path to the adapter
 }
--- dap.adapters.go = function(callback, config)
--- 	local stdout = vim.loop.new_pipe(false)
--- 	local handle
--- 	local pid_or_err
--- 	local host = config.host or "127.0.0.1"
--- 	local port = config.port or "38697"
--- 	local addr = string.format("%s:%s", host, port)
--- 	local opts = {
--- 		stdio = { nil, stdout },
--- 		args = { "dap", "-l", addr },
--- 		detached = true,
--- 	}
--- 	handle, pid_or_err = vim.loop.spawn("dlv", opts, function(code)
--- 		stdout:close()
--- 		handle:close()
--- 		if code ~= 0 then
--- 			print("dlv exited with code", code)
--- 		end
--- 	end)
--- 	assert(handle, "Error running dlv: " .. tostring(pid_or_err))
--- 	stdout:read_start(function(err, chunk)
--- 		assert(not err, err)
--- 		if chunk then
--- 			vim.schedule(function()
--- 				require("dap.repl").append(chunk)
--- 			end)
--- 		end
--- 	end)
--- 	-- Wait for delve to start
--- 	vim.defer_fn(function()
--- 		callback({ type = "server", host = "127.0.0.1", port = port })
--- 	end, 100)
--- end
 
 dap.set_log_level("DEBUG")
--- dap.adapters.node2 = {
--- 	type = "executable",
--- 	command = "node",
--- 	args = { os.getenv("HOME") .. "/.emacs.d/.extension/vscode/ms-vscode.node-debug2/extension/out/src/nodeDebug.js" },
--- }
--- dap.configurations.go = {
--- 	{
--- 		type = "go",
--- 		name = "Debug",
--- 		request = "launch",
--- 		program = "${workspaceFolder}",
--- 	},
--- }
--- dap.configurations.typescript = {
--- 	{
--- 		type = "node2",
--- 		request = "launch",
--- 		args = { "/home/tocha/develop/aidmed-website-my/src/app.ts" },
--- 		runtimeArgs = { "--nolazy", "-r", "ts-node/register" },
--- 		cwd = "/home/tocha/develop/aidmed-website-my/",
--- 		sourceMaps = true,
--- 		protocol = "inspector",
--- 		console = "integratedTerminal",
--- 	},
--- }
-
--- Autocommands (https://neovim.io/doc/user/autocmd.html)
--- lvim.autocommands.custom_groups = {
--- -   { "BufWinEnter", "*.lua", "setlocal ts=8 sw=8" },
--- }
